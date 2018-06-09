@@ -1,6 +1,6 @@
 pragma solidity ^0.4.23;
 
-/// @title SpankChain Virtual-Channels - A layer2 hub and spoke payment network 
+/// @title Set Virtual Channels - A layer2 hub and spoke payment network 
 /// @author Nathan Ginnever
 
 contract LedgerChannel {
@@ -24,7 +24,6 @@ contract LedgerChannel {
 
     bool public isOpen = false; // true when both parties have joined
     bool public isUpdateLCSettling = false;
-    bool public isFinal = false;
 
     uint256 public numOpenVC = 0;
 
@@ -37,9 +36,6 @@ contract LedgerChannel {
         uint256 sequence;
         address challenger; // Initiator of challenge
         uint256 updateVCtimeout; // when update VC times out
-
-        //uint256 subchan1; // ID of LC AI
-        //uint256 subchan2; // ID of LC BI
         // channel state
         address partyA; // VC participant A
         address partyB; // VC participant B
@@ -51,9 +47,9 @@ contract LedgerChannel {
 
     mapping(uint => VirtualChannel) virtualChannels;
 
-    constructor(address _partyA, address _partyB, uint256 _balanceA, uint256 _balanceI) public payable {
+    constructor(address _partyA, address _partyI, uint256 _balanceA, uint256 _balanceI) public payable {
         require(_partyA != 0x0, 'No partyA address provided to LC constructor');
-        require(_partyI != 0x0, 'No partyB address provided to LC constructor');
+        require(_partyI != 0x0, 'No partyI address provided to LC constructor');
         require(msg.value == _balanceA);
         require(msg.sender == _partyA);
         // Set initial ledger channel state
@@ -64,9 +60,9 @@ contract LedgerChannel {
         partyI = _partyI;
         balanceA = _balanceA;
         balanceI = _balanceI;
-        sequeunce = 0;
+        sequence = 0;
         // is close flag, lc state sequence, number open vc, vc root hash, partyA... 
-        stateHash = keccak256(0, 0, 0, 0x0, partyA, partyI, balanceA, balanceI);
+        stateHash = keccak256(uint256(0), uint256(0), uint256(0), bytes32(0x0), partyA, partyI, balanceA, balanceI);
         LCopenTimeout = now + confirmTime;
     }
 
@@ -81,7 +77,7 @@ contract LedgerChannel {
         // require the channel is not open yet
         require(isOpen == false);
         // Initial state
-        bytes32 _state = keccak256(0, 0, 0x0, partyA, partyI, balanceA, msg.value);
+        bytes32 _state = keccak256(uint256(0), uint256(0), uint256(0), bytes32(0x0), partyA, partyI, balanceA, msg.value);
         address recover = _getSig(_state, _v, _r, _s);
         require(_state == stateHash);
 
@@ -103,11 +99,11 @@ contract LedgerChannel {
     }
 
     // TODO: Check there are no open virtual channels, the client should have cought this before signing a close LC state update
-    function consensusCloseChannel(uint256 isClose, uint256 sequence, uint256 _balanceA, uint256 _balanceI, uint8[2] sigV, bytes32[2] sigR, bytes32[2] sigS) public {
+    function consensusCloseChannel(uint256 isClose, uint256 _sequence, uint256 _balanceA, uint256 _balanceI, uint8[2] sigV, bytes32[2] sigR, bytes32[2] sigS) public {
         require(isClose == 1, 'State did not have a signed close sentinel');
 
         // assume num open vc is 0 and root hash is 0x0
-        bytes32 _state = keccak256(isClose, sequence, 0, 0x0, partyA, partyI, _balanceA, _balanceI);
+        bytes32 _state = keccak256(isClose, _sequence, uint256(0), bytes32(0x0), partyA, partyI, _balanceA, _balanceI);
 
         require(partyA == _getSig(_state, sigV[0], sigR[0], sigS[0]));
         require(partyI == _getSig(_state, sigV[1], sigR[1], sigS[1]));
@@ -118,11 +114,11 @@ contract LedgerChannel {
 
     // Byzantine functions
 
-    function updateLCstate(uint256 isClose, uint256 _sequence, uint256 _numOpenVc, uint256 _balanceA, uint256 _balanceI, bytes32 VCroot, uint8[2] sigV, bytes32[2] sigR, bytes32[2] sigS) public {
+    function updateLCstate(uint256 isClose, uint256 _sequence, uint256 _numOpenVc, uint256 _balanceA, uint256 _balanceI, bytes32 _VCroot, uint8[2] sigV, bytes32[2] sigR, bytes32[2] sigS) public {
         require(isClose == 0, 'State should not have a signed close sentinel');
         require(sequence < _sequence); // do same as vc sequence check
 
-        bytes32 _state = keccak256(isClose, sequence, VCroot, numOpenVc, partyA, partyI, _balanceA, _balanceI);
+        bytes32 _state = keccak256(isClose, _sequence, _VCroot, _numOpenVc, partyA, partyI, _balanceA, _balanceI);
 
         require(partyA == _getSig(_state, sigV[0], sigR[0], sigS[0]));
         require(partyI == _getSig(_state, sigV[1], sigR[1], sigS[1]));
@@ -132,7 +128,7 @@ contract LedgerChannel {
         numOpenVC = _numOpenVc;
         balanceA = _balanceA;
         balanceI = _balanceI;
-        VCrootHash = VCroot;
+        VCrootHash = _VCroot;
 
         isUpdateLCSettling = true;
         updateLCtimeout = now + confirmTime;
@@ -190,7 +186,7 @@ contract LedgerChannel {
 
     function closeVirtualChannel(uint _vcID) public {
         // require(updateLCtimeout > now)
-        require(subChannels[_channelID].isInSettlementState == 1);
+        require(virtualChannels[_vcID].isInSettlementState == 1);
         require(virtualChannels[_vcID].updateVCtimeout < now);
         // reduce the number of open virtual channels stored on LC
         numOpenVC--;
@@ -204,14 +200,14 @@ contract LedgerChannel {
 
     function byzantineCloseChannel() public{
         // check settlement flag
-        require(numOpenChannels == 0);
+        require(numOpenVC == 0);
         _finalizeAll(balanceA, balanceI);
-        isFinal == true;
+        isOpen = false;
     }
 
     // Internal
 
-    function _finalizeAll(uint256 _balanceA, uint256 _balanceI,) internal {
+    function _finalizeAll(uint256 _balanceA, uint256 _balanceI) internal {
         partyA.transfer(_balanceA);
         partyI.transfer(_balanceI);
     }
@@ -234,7 +230,7 @@ contract LedgerChannel {
     }
 
 
-    function _getSig(bytes _d, uint8 _v, bytes32 _r, bytes32 _s) internal pure returns(address) {
+    function _getSig(bytes32 _d, uint8 _v, bytes32 _r, bytes32 _s) internal pure returns(address) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         bytes32 h = keccak256(_d);
 

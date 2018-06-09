@@ -36,7 +36,8 @@ contract LedgerChannel {
         uint256 isInSettlementState;
         uint256 sequence;
         address challenger; // Initiator of challenge
-        uint256 timeout;
+        uint256 updateVCtimeout; // when update VC times out
+
         //uint256 subchan1; // ID of LC AI
         //uint256 subchan2; // ID of LC BI
         // channel state
@@ -146,7 +147,7 @@ contract LedgerChannel {
     // Params: vc init state, vc final balance, vcID
     function settleVC(uint _vcID, uint256 _sequence, address _partyB, uint256 _balanceA, uint256 _balanceB, uint256 updateSeq, uint256 updateBalA, uint256 updateBalB, uint8[4] sigV, bytes32[4] sigR, bytes32[4] sigS) public payable{
         // Check time has passed on updateLCtimeout and has not passed the time to store a vc state
-        require(updateLCtimeout < now && now < updateLCtimeout + confirmTime);
+        require(updateLCtimeout < now && now < virtualChannels[_vcID].updateVCtimeout);
         // partyB is now Ingrid 
         bytes32 _initState = keccak256(_sequence, partyA, _partyB, partyI, _balanceA, _balanceB);
 
@@ -187,7 +188,7 @@ contract LedgerChannel {
         virtualChannels[_vcID].balanceA = updateBalA;
         virtualChannels[_vcID].balanceB = updateBalB;
 
-        virtualChannels[_vcID].timeout = now + confirmTime;
+        virtualChannels[_vcID].updateVCtimeout = now + confirmTime;
         virtualChannels[_vcID].isInSettlementState = 1;
     }
 

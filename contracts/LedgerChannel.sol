@@ -1,5 +1,7 @@
 pragma solidity ^0.4.23;
 
+import "./lib/ECTools.sol";
+
 /// @title Set Virtual Channels - A layer2 hub and spoke payment network 
 /// @author Nathan Ginnever
 
@@ -73,12 +75,12 @@ contract LedgerChannel {
         }
     }
 
-    function joinChannel(uint8 _v, bytes32 _r, bytes32 _s) public payable {
+    function joinChannel(string _sigI) public payable {
         // require the channel is not open yet
         require(isOpen == false);
         // Initial state
         bytes32 _state = keccak256(uint256(0), uint256(0), uint256(0), bytes32(0x0), partyA, partyI, balanceA, msg.value);
-        address recover = _getSig(_state, _v, _r, _s);
+        address recover = ECTools.recoverSigner(_state, _sigI);
         require(_state == stateHash);
 
         // no longer allow joining functions to be called
@@ -99,14 +101,14 @@ contract LedgerChannel {
     }
 
     // TODO: Check there are no open virtual channels, the client should have cought this before signing a close LC state update
-    function consensusCloseChannel(uint256 isClose, uint256 _sequence, uint256 _balanceA, uint256 _balanceI, uint8[2] sigV, bytes32[2] sigR, bytes32[2] sigS) public {
+    function consensusCloseChannel(uint256 isClose, uint256 _sequence, uint256 _balanceA, uint256 _balanceI, string _sigA, string _sigI) public {
         require(isClose == 1, 'State did not have a signed close sentinel');
 
         // assume num open vc is 0 and root hash is 0x0
         bytes32 _state = keccak256(isClose, _sequence, uint256(0), bytes32(0x0), partyA, partyI, _balanceA, _balanceI);
 
-        require(partyA == _getSig(_state, sigV[0], sigR[0], sigS[0]));
-        require(partyI == _getSig(_state, sigV[1], sigR[1], sigS[1]));
+        require(partyA == ECTools.recoverSigner(_state, _sigA));
+        require(partyI == ECTools.recoverSigner(_state, _sigI));
 
         _finalizeAll(_balanceA, _balanceI);
         isOpen = false;
@@ -114,14 +116,14 @@ contract LedgerChannel {
 
     // Byzantine functions
 
-    function updateLCstate(uint256 isClose, uint256 _sequence, uint256 _numOpenVc, uint256 _balanceA, uint256 _balanceI, bytes32 _VCroot, uint8[2] sigV, bytes32[2] sigR, bytes32[2] sigS) public {
+    function updateLCstate(uint256 isClose, uint256 _sequence, uint256 _numOpenVc, uint256 _balanceA, uint256 _balanceI, bytes32 _VCroot, string _sigA, string _sigI) public {
         require(isClose == 0, 'State should not have a signed close sentinel');
         require(sequence < _sequence); // do same as vc sequence check
 
         bytes32 _state = keccak256(isClose, _sequence, _VCroot, _numOpenVc, partyA, partyI, _balanceA, _balanceI);
 
-        require(partyA == _getSig(_state, sigV[0], sigR[0], sigS[0]));
-        require(partyI == _getSig(_state, sigV[1], sigR[1], sigS[1]));
+        require(partyA == ECTools.recoverSigner(_state, _sigA));
+        require(partyI == ECTools.recoverSigner(_state, _sigI));
 
         // update LC state
         sequence = _sequence;
@@ -136,39 +138,41 @@ contract LedgerChannel {
         // make settlement flag
     }
 
-    // Params: vc init state, vc final balance, vcID
-    function settleVC(uint _vcID, bytes _proof, uint256 _sequence, address _partyB, uint256 _balanceA, uint256 _balanceB, uint256 updateSeq, uint256 updateBalA, uint256 updateBalB, uint8[4] sigV, bytes32[4] sigR, bytes32[4] sigS) public payable{
+    function initVCstate(uint _vcID, bytes _proof, uint256 _sequence, address _partyB, uint256 _balanceA, uint256 _balanceB, string sigA, string sigB) public {
         // sub-channel must be open
         require(virtualChannels[_vcID].isClose == 0);
+        require(virtualChannels[_vcID].sequence == 0);
         // Check time has passed on updateLCtimeout and has not passed the time to store a vc state
-        require(updateLCtimeout < now && now < virtualChannels[_vcID].updateVCtimeout);
+        require(updateLCtimeout < now);
         // partyB is now Ingrid 
         bytes32 _initState = keccak256(_sequence, partyA, _partyB, partyI, _balanceA, _balanceB);
 
         // Make sure Alice and Bob have signed initial vc state (A/B in oldState)
-        require(partyA == _getSig(_initState, sigV[0], sigR[0], sigS[0]));
-        require(_partyB == _getSig(_initState, sigV[1], sigR[1], sigS[1]));
+        require(partyA == ECTools.recoverSigner(_initState, sigA));
+        require(_partyB == ECTools.recoverSigner(_initState, sigB));
+
+        // Check the oldState is in the root hash
+        require(_isContained(_initState, _proof, VCrootHash));
 
         virtualChannels[_vcID].partyB = _partyB; // VC participant B
+        virtualChannels[_vcID].sequence = _sequence;
+        virtualChannels[_vcID].updateVCtimeout = now + confirmTime;
+    }
+
+    // Params: vc init state, vc final balance, vcID
+    function settleVC(uint _vcID, uint256 updateSeq, address _partyB, uint256 updateBalA, uint256 updateBalB, string sigA, string sigB) public payable{
+        // sub-channel must be open
+        require(virtualChannels[_vcID].isClose == 0);
+        require(virtualChannels[_vcID].sequence < updateSeq);
+        // Check time has passed on updateLCtimeout and has not passed the time to store a vc state
+        require(updateLCtimeout < now && now < virtualChannels[_vcID].updateVCtimeout);
 
         bytes32 _upateState = keccak256(updateSeq, partyA, _partyB, partyI, updateBalA, updateBalB);
 
         // Make sure Alice and Bob have signed a higher sequence new state
-        require(partyA == _getSig(_upateState, sigV[2], sigR[2], sigS[2]));
-        require(virtualChannels[_vcID].partyB == _getSig(_upateState, sigV[3], sigR[3], sigS[3]));
+        require(partyA == ECTools.recoverSigner(_upateState, sigA));
+        require(virtualChannels[_vcID].partyB == ECTools.recoverSigner(_upateState, sigB));
 
-        if(_initState != _upateState) {
-            // check the new state is a higher sequence
-            require(virtualChannels[_vcID].sequence < updateSeq);
-        } else {
-            // only allow startSettleVC to be called once with init state only
-            // if a valid higher sequence is passesd in, another higher sequence
-            // will have to follow
-            require(virtualChannels[_vcID].sequence == 0);
-        }
-
-        // Check the oldState is in the root hash
-        require(_isContained(_initState, _proof, VCrootHash));
         // store VC data
         // we may want to record who is initiating on-chain settles
         virtualChannels[_vcID].challenger = msg.sender;
@@ -227,19 +231,5 @@ contract LedgerChannel {
         }
 
         return cursor == _root;
-    }
-
-
-    function _getSig(bytes32 _d, uint8 _v, bytes32 _r, bytes32 _s) internal pure returns(address) {
-        bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-        bytes32 h = keccak256(_d);
-
-        bytes32 prefixedHash = keccak256(prefix, h);
-
-        address a = ecrecover(prefixedHash, _v, _r, _s);
-
-        //address a = ECRecovery.recover(prefixedHash, _s);
-
-        return(a);
     }
 }

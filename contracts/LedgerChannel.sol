@@ -140,12 +140,10 @@ contract LedgerChannel {
         // make settlement flag
     }
 
-    // function challengeUpdateLCstate(uint256 isClose, uint256 sequence, uint256 _balanceA, uint256 _balanceB, bytes32 VCroot, uint8[2] sigV, bytes32[2] sigR, bytes32[2] sigS) public {
-        
-    // }
-
     // Params: vc init state, vc final balance, vcID
-    function settleVC(uint _vcID, uint256 _sequence, address _partyB, uint256 _balanceA, uint256 _balanceB, uint256 updateSeq, uint256 updateBalA, uint256 updateBalB, uint8[4] sigV, bytes32[4] sigR, bytes32[4] sigS) public payable{
+    function settleVC(uint _vcID, bytes _proof, uint256 _sequence, address _partyB, uint256 _balanceA, uint256 _balanceB, uint256 updateSeq, uint256 updateBalA, uint256 updateBalB, uint8[4] sigV, bytes32[4] sigR, bytes32[4] sigS) public payable{
+        // sub-channel must be open
+        require(virtualChannels[_vcID].isClose == 0);
         // Check time has passed on updateLCtimeout and has not passed the time to store a vc state
         require(updateLCtimeout < now && now < virtualChannels[_vcID].updateVCtimeout);
         // partyB is now Ingrid 
@@ -155,14 +153,16 @@ contract LedgerChannel {
         require(partyA == _getSig(_initState, sigV[0], sigR[0], sigS[0]));
         require(_partyB == _getSig(_initState, sigV[1], sigR[1], sigS[1]));
 
+        virtualChannels[_vcID].partyB = _partyB; // VC participant B
+
         bytes32 _upateState = keccak256(updateSeq, partyA, _partyB, partyI, updateBalA, updateBalB);
 
         // Make sure Alice and Bob have signed a higher sequence new state
         require(partyA == _getSig(_upateState, sigV[2], sigR[2], sigS[2]));
-        require(_partyB == _getSig(_upateState, sigV[3], sigR[3], sigS[3]));
+        require(virtualChannels[_vcID].partyB == _getSig(_upateState, sigV[3], sigR[3], sigS[3]));
 
         if(_initState != _upateState) {
-            // check the new state is a higher sequence or eual
+            // check the new state is a higher sequence
             require(virtualChannels[_vcID].sequence < updateSeq);
         } else {
             // only allow startSettleVC to be called once with init state only
@@ -172,18 +172,14 @@ contract LedgerChannel {
         }
 
         // Check the oldState is in the root hash
-
+        require(_isContained(_initState, _proof, VCrootHash));
         // store VC data
-
-        // sub-channel must be open
-        require(virtualChannels[_vcID].isClose == 0);
         // we may want to record who is initiating on-chain settles
         virtualChannels[_vcID].challenger = msg.sender;
         virtualChannels[_vcID].sequence = updateSeq;
 
         // channel state
         virtualChannels[_vcID].partyA = partyA; // VC participant A
-        virtualChannels[_vcID].partyB = _partyB; // VC participant B
         virtualChannels[_vcID].partyI = partyI; // LC hub
         virtualChannels[_vcID].balanceA = updateBalA;
         virtualChannels[_vcID].balanceB = updateBalB;
@@ -192,44 +188,49 @@ contract LedgerChannel {
         virtualChannels[_vcID].isInSettlementState = 1;
     }
 
-    // challenger can agree to latest state proposed by initiator, or present a higher VC state
-    // function challengeSettleVC(bytes _forceState, uint _vcID) public payable{
-
-    // }
-
     function closeVirtualChannel(uint _vcID) public {
         // require(updateLCtimeout > now)
         require(subChannels[_channelID].isInSettlementState == 1);
-        require(virtualChannels[_vcID].timeout < now);
+        require(virtualChannels[_vcID].updateVCtimeout < now);
         // reduce the number of open virtual channels stored on LC
+        numOpenVC--;
         // re-introduce the balances back into the LC state from the settled VC
+        balanceA+=virtualChannels[_vcID].balanceA;
+        balanceI+=virtualChannels[_vcID].balanceB;
         // close vc flags
+        virtualChannels[_vcID].isClose = 1;
     }
 
 
     function byzantineCloseChannel() public{
         // check settlement flag
         require(numOpenChannels == 0);
-        // isFinal == true;
+        _finalizeAll(balanceA, balanceI);
+        isFinal == true;
     }
 
     // Internal
 
-    function _finalizeAll(uint256 _balanceA, uint256 _balanceB,) internal {
+    function _finalizeAll(uint256 _balanceA, uint256 _balanceI,) internal {
         partyA.transfer(_balanceA);
-        partyB.transfer(_balanceB);
+        partyI.transfer(_balanceI);
     }
 
-    function _CheckVC(uint vid, address p1, uint bal1, uint subchan1, address Ingrid,
-                               address p2, uint bal2, uint subchan2, uint validity, bytes sig) private view {
-        require(id == subchan1 || id == subchan2);
-        require(Ingrid == alice.id || Ingrid == bob.id);
-        require(Other(Ingrid, alice.id, bob.id) == p1 || Other(Ingrid, alice.id, bob.id) == p2);
-        require(CheckSignature(Other(msg.sender, alice.id, bob.id), vid, p1, cash1, subchan1, Ingrid, p2, cash2, subchan2, validity, 0, sig));
+    function _isContained(bytes32 _hash, bytes _proof, bytes32 _root) internal pure returns (bool) {
+        bytes32 cursor = _hash;
+        bytes32 proofElem;
 
-        // check the vc state provided by either alice or ingrid to force close a VC
-        // check the state is signed by Alice and Bob
-        // check the balance settling against the LC balance does not go beyond partyA or B's bond in the VC
+        for (uint256 i=64; i<=_proof.length; i+=32) {
+            assembly { proofElem := mload(add(_proof, i)) }
+
+            if (cursor < proofElem) {
+                cursor = keccak256(cursor, proofElem);
+            } else {
+                cursor = keccak256(proofElem, cursor);
+            }
+        }
+
+        return cursor == _root;
     }
 
 

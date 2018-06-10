@@ -74,7 +74,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
     AI_lcS0.push(web3.toWei(20, 'ether'))
 
     AI_lcS0 = Utils.marshallState(AI_lcS0)
-    console.log(AI_lcS0)
+    //console.log(AI_lcS0)
   })
 
   it("Alice signs initial lcS0 state", async () => {
@@ -92,13 +92,21 @@ contract('Test Disputed Ether Payments', function(accounts) {
     let ba = await lc.balanceA()
     let bi = await lc.balanceI()
 
-    console.log(pa)
-    console.log(partyA)
-    console.log(pi)
-    console.log(ba)
-    console.log(bi)
-    console.log(stateHash)
-    console.log(web3.sha3(AI_lcS0, {encoding: 'hex'}))
+    // console.log(pa)
+    // console.log(partyA)
+    // console.log(pi)
+    // console.log(ba)
+    // console.log(bi)
+    // console.log(stateHash)
+    // console.log(web3.sha3(AI_lcS0, {encoding: 'hex'}))
+  })
+
+  it("Hub signs initial lcS0 state", async () => {
+    AI_lcS0_sigI = await web3.eth.sign(partyI, web3.sha3(AI_lcS0, {encoding: 'hex'}))
+  })
+
+  it("Ingrid joins ledger channel", async () => {
+    await lc.joinChannel(AI_lcS0_sigI, {from: partyI, value: web3.toWei(20, 'ether')})
   })
 
 })

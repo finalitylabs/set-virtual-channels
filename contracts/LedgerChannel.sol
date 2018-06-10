@@ -79,9 +79,7 @@ contract LedgerChannel {
         // require the channel is not open yet
         require(isOpen == false);
         // Initial state
-        bytes32 _state = keccak256(uint256(0), uint256(0), uint256(0), bytes32(0x0), partyA, partyI, balanceA, msg.value);
-        address recover = ECTools.recoverSigner(_state, _sigI);
-        require(_state == stateHash);
+        address recover = ECTools.recoverSigner(stateHash, _sigI);
 
         // no longer allow joining functions to be called
         isOpen = true;

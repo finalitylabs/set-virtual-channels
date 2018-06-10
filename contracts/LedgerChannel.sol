@@ -64,7 +64,7 @@ contract LedgerChannel {
         balanceI = _balanceI;
         sequence = 0;
         // is close flag, lc state sequence, number open vc, vc root hash, partyA... 
-        stateHash = keccak256(uint256(0), uint256(0), uint256(0), bytes32(0x0), partyA, partyI, balanceA, balanceI);
+        stateHash = keccak256(uint256(0), uint256(0), uint256(0), bytes32(0x0), bytes32(partyA), bytes32(partyI), balanceA, balanceI);
         LCopenTimeout = now + confirmTime;
     }
 

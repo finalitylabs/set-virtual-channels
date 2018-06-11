@@ -103,7 +103,7 @@ contract LedgerChannel {
         require(isClose == 1, 'State did not have a signed close sentinel');
 
         // assume num open vc is 0 and root hash is 0x0
-        bytes32 _state = keccak256(isClose, _sequence, uint256(0), bytes32(0x0), partyA, partyI, _balanceA, _balanceI);
+        bytes32 _state = keccak256(isClose, _sequence, uint256(0), bytes32(0x0), bytes32(partyA), bytes32(partyI), _balanceA, _balanceI);
 
         require(partyA == ECTools.recoverSigner(_state, _sigA));
         require(partyI == ECTools.recoverSigner(_state, _sigI));
@@ -118,7 +118,7 @@ contract LedgerChannel {
         require(isClose == 0, 'State should not have a signed close sentinel');
         require(sequence < _sequence); // do same as vc sequence check
 
-        bytes32 _state = keccak256(isClose, _sequence, _VCroot, _numOpenVc, partyA, partyI, _balanceA, _balanceI);
+        bytes32 _state = keccak256(isClose, _sequence, _VCroot, _numOpenVc, bytes32(partyA), bytes32(partyI), _balanceA, _balanceI);
 
         require(partyA == ECTools.recoverSigner(_state, _sigA));
         require(partyI == ECTools.recoverSigner(_state, _sigI));
@@ -143,7 +143,7 @@ contract LedgerChannel {
         // Check time has passed on updateLCtimeout and has not passed the time to store a vc state
         require(updateLCtimeout < now);
         // partyB is now Ingrid 
-        bytes32 _initState = keccak256(_sequence, partyA, _partyB, partyI, _balanceA, _balanceB);
+        bytes32 _initState = keccak256(_sequence, bytes32(partyA), bytes32(_partyB), bytes32(partyI), _balanceA, _balanceB);
 
         // Make sure Alice and Bob have signed initial vc state (A/B in oldState)
         require(partyA == ECTools.recoverSigner(_initState, sigA));
@@ -165,7 +165,7 @@ contract LedgerChannel {
         // Check time has passed on updateLCtimeout and has not passed the time to store a vc state
         require(updateLCtimeout < now && now < virtualChannels[_vcID].updateVCtimeout);
 
-        bytes32 _upateState = keccak256(updateSeq, partyA, _partyB, partyI, updateBalA, updateBalB);
+        bytes32 _upateState = keccak256(updateSeq, bytes32(partyA), bytes32(_partyB), bytes32(partyI), updateBalA, updateBalB);
 
         // Make sure Alice and Bob have signed a higher sequence new state
         require(partyA == ECTools.recoverSigner(_upateState, sigA));

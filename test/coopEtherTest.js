@@ -211,7 +211,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
     BI_lcS1_sigB = await web3.eth.sign(partyB, web3.sha3(BI_lcS1, {encoding: 'hex'}))
   })
 
-  it("Hub signs bith Alice and Bob's lcS1 state to open VC", async () => {
+  it("Hub signs both Alice and Bob's lcS1 state to open VC", async () => {
     AI_lcS1_sigI = await web3.eth.sign(partyI, web3.sha3(AI_lcS1, {encoding: 'hex'}))
     BI_lcS1_sigI = await web3.eth.sign(partyI, web3.sha3(BI_lcS1, {encoding: 'hex'}))
   })
@@ -265,11 +265,11 @@ contract('Test Disputed Ether Payments', function(accounts) {
     AI_lcS2_sigA = await web3.eth.sign(partyA, web3.sha3(AI_lcS2, {encoding: 'hex'}))
   })
 
-  it("Bob signs lcS1 state and sends to hub", async () => {
+  it("Bob signs lcS2 state and sends to hub", async () => {
     BI_lcS2_sigB = await web3.eth.sign(partyB, web3.sha3(BI_lcS2, {encoding: 'hex'}))
   })
 
-  it("Hub signs bith Alice and Bob's lcS2 state to open VC", async () => {
+  it("Hub signs both Alice and Bob's lcS2 state to open VC", async () => {
     AI_lcS2_sigI = await web3.eth.sign(partyI, web3.sha3(AI_lcS2, {encoding: 'hex'}))
     BI_lcS2_sigI = await web3.eth.sign(partyI, web3.sha3(BI_lcS2, {encoding: 'hex'}))
   })

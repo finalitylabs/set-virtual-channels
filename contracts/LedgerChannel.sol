@@ -49,19 +49,15 @@ contract LedgerChannel {
 
     mapping(uint => VirtualChannel) virtualChannels;
 
-    constructor(address _partyA, address _partyI, uint256 _balanceA, uint256 _balanceI) public payable {
-        require(_partyA != 0x0, 'No partyA address provided to LC constructor');
+    constructor(address _partyI) public payable {
         require(_partyI != 0x0, 'No partyI address provided to LC constructor');
-        require(msg.value == _balanceA);
-        require(msg.sender == _partyA);
         // Set initial ledger channel state
         // Alice must execute this and we assume the initial state 
         // to be signed from this requirement
         // Alternative is to check a sig as in joinChannel
-        partyA = _partyA;
+        partyA = msg.sender;
         partyI = _partyI;
-        balanceA = _balanceA;
-        balanceI = _balanceI;
+        balanceA = msg.value;
         sequence = 0;
         // is close flag, lc state sequence, number open vc, vc root hash, partyA... 
         stateHash = keccak256(uint256(0), uint256(0), uint256(0), bytes32(0x0), bytes32(partyA), bytes32(partyI), balanceA, balanceI);
@@ -80,6 +76,7 @@ contract LedgerChannel {
         require(isOpen == false);
         // Initial state
         address recover = ECTools.recoverSigner(stateHash, _sigI);
+        balanceI = msg.value;
 
         // no longer allow joining functions to be called
         isOpen = true;

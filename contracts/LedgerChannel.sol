@@ -194,8 +194,14 @@ contract LedgerChannel {
         // reduce the number of open virtual channels stored on LC
         numOpenVC--;
         // re-introduce the balances back into the LC state from the settled VC
-        balanceA+=virtualChannels[_vcID].balanceA;
-        balanceI+=virtualChannels[_vcID].balanceB;
+        // decide if this lc is alice or bob in the vc
+        if(virtualChannels[_vcID].partyA == partyA) {
+            balanceA+=virtualChannels[_vcID].balanceA;
+            balanceI+=virtualChannels[_vcID].balanceB;
+        } else if (virtualChannels[_vcID].partyB == partyA) {
+            balanceA+=virtualChannels[_vcID].balanceB;
+            balanceI+=virtualChannels[_vcID].balanceA;
+        }
         // close vc flags
         virtualChannels[_vcID].isClose = 1;
     }
@@ -203,6 +209,7 @@ contract LedgerChannel {
 
     function byzantineCloseChannel() public{
         // check settlement flag
+        require(isUpdateLCSettling == true);
         require(numOpenVC == 0);
         _finalizeAll(balanceA, balanceI);
         isOpen = false;

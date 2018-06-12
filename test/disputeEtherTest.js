@@ -257,7 +257,6 @@ contract('Test Disputed Ether Payments', function(accounts) {
 
     let isSettle = await lc2.isUpdateLCSettling()
     let timeout = await lc2.updateLCtimeout()
-    console.log(root)
   })
 
   it("Ingrid initiates settling vc with initial state", async () => {
@@ -273,65 +272,25 @@ contract('Test Disputed Ether Payments', function(accounts) {
     await lc2.settleVC(1337, 1, partyA, partyB, web3.toWei(3, 'ether'), web3.toWei(9, 'ether'), AB_vcS1_sigA, AB_vcS1_sigB)
   })
 
-  // it("Bob generates lc state to close vc", async () => {
-  //   BI_lcS2 = []
-  //   BI_lcS2.push(0)
-  //   BI_lcS2.push(2)
-  //   BI_lcS2.push(0)
-  //   BI_lcS2.push('0x0')
-  //   BI_lcS2.push(partyB)
-  //   BI_lcS2.push(partyI)
-  //   BI_lcS2.push(web3.toWei(12, 'ether'))
-  //   BI_lcS2.push(web3.toWei(18, 'ether'))
+  it("Hub may now sign Alice's lcS2 state to consensus close VC", async () => {
+    AI_lcS2_sigI = await web3.eth.sign(partyI, web3.sha3(AI_lcS2, {encoding: 'hex'}))
+  })
 
-  //   BI_lcS2 = Utils.marshallState(BI_lcS2)    
-  // })
+  it("Anyone calls the wakeup function to settle vc state into lc state", async () => {
+    await lc2.closeVirtualChannel(1337)
+  })
 
-  // it("Alice signs lcS2 state and sends to Hub", async () => {
-  //   AI_lcS2_sigA = await web3.eth.sign(partyA, web3.sha3(AI_lcS2, {encoding: 'hex'}))
-  // })
+  it("Anyone calls close byzantine channel since all vc are closed", async () => {
+    var balA = await web3.fromWei(web3.eth.getBalance(partyB), 'ether')
+    var balB = await web3.fromWei(web3.eth.getBalance(partyI), 'ether')
+    // console.log('Balance B before close: ' + balA)
+    // console.log('Balance I before close: ' + balB)
+    await lc2.byzantineCloseChannel()
+    balA = await web3.fromWei(web3.eth.getBalance(partyB), 'ether')
+    balB = await web3.fromWei(web3.eth.getBalance(partyI), 'ether')
+    // console.log('Balance B after close: ' + balA)
+    // console.log('Balance I after close: ' + balB)
+  })
 
-  // it("Bob signs lcS2 state and sends to hub", async () => {
-  //   BI_lcS2_sigB = await web3.eth.sign(partyB, web3.sha3(BI_lcS2, {encoding: 'hex'}))
-  // })
-
-  // it("Hub signs both Alice and Bob's lcS2 state to open VC", async () => {
-  //   AI_lcS2_sigI = await web3.eth.sign(partyI, web3.sha3(AI_lcS2, {encoding: 'hex'}))
-  //   BI_lcS2_sigI = await web3.eth.sign(partyI, web3.sha3(BI_lcS2, {encoding: 'hex'}))
-  // })
-
-  // it("Alice creates lc update to close lc", async () => {
-  //   AI_lcS3 = []
-  //   AI_lcS3.push(1)
-  //   AI_lcS3.push(3)
-  //   AI_lcS3.push(0)
-  //   AI_lcS3.push('0x0')
-  //   AI_lcS3.push(partyA)
-  //   AI_lcS3.push(partyI)
-  //   AI_lcS3.push(web3.toWei(8, 'ether'))
-  //   AI_lcS3.push(web3.toWei(22, 'ether'))
-
-  //   AI_lcS3 = Utils.marshallState(AI_lcS3) 
-  // })
-
-  // it("Alice signs lcS3 state and sends to Hub", async () => {
-  //   AI_lcS3_sigA = await web3.eth.sign(partyA, web3.sha3(AI_lcS3, {encoding: 'hex'}))
-  // })
-
-  // it("Hub signs closing lcS3 state", async () => {
-  //   AI_lcS3_sigI = await web3.eth.sign(partyI, web3.sha3(AI_lcS3, {encoding: 'hex'}))
-  // })
-
-  // it("Close ledger channel", async () => {
-  //   var balA = await web3.fromWei(web3.eth.getBalance(partyA), 'ether')
-  //   var balB = await web3.fromWei(web3.eth.getBalance(partyI), 'ether')
-  //   // console.log('Balance A before close: ' + balA)
-  //   // console.log('Balance I before close: ' + balB)
-  //   await lc.consensusCloseChannel(1, 3, web3.toWei(8, 'ether'), web3.toWei(22, 'ether'), AI_lcS3_sigA, AI_lcS3_sigI)
-  //   balA = await web3.fromWei(web3.eth.getBalance(partyA), 'ether')
-  //   balB = await web3.fromWei(web3.eth.getBalance(partyI), 'ether')
-  //   // console.log('Balance A after close: ' + balA)
-  //   // console.log('Balance I after close: ' + balB)
-  // })
 
 })

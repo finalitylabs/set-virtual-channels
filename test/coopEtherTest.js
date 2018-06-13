@@ -6,7 +6,6 @@ const Ledger = artifacts.require('./LedgerChannel.sol')
 const EC = artifacts.require('./ECTools.sol')
 
 let lc
-let lc2
 
 // state
 
@@ -64,6 +63,7 @@ contract('Test Cooperative Ether Payments', function(accounts) {
 
     let ec = await EC.new()
     Ledger.link('ECTools', ec.address)
+    lc = await Ledger.new()
   })
 
   it("Create initial ledger channel state lcS0 for AI channel", async () => {
@@ -86,13 +86,13 @@ contract('Test Cooperative Ether Payments', function(accounts) {
 
 
   it("Alice initiates ledger channel with lcS0", async () => {
-    lc = await Ledger.new(partyA, partyI, web3.toWei(10, 'ether'), web3.toWei(20, 'ether'), {from:partyA, value: web3.toWei(10, 'ether')})
-    let openTimeout = await lc.LCopenTimeout()
-    let stateHash = await lc.stateHash()
-    let pa = await lc.partyA()
-    let pi = await lc.partyI()
-    let ba = await lc.balanceA()
-    let bi = await lc.balanceI()
+    await lc.createChannel(1111, partyI, {from:partyA, value: web3.toWei(10, 'ether')})
+    // let openTimeout = await lc.LCopenTimeout()
+    // let stateHash = await lc.stateHash()
+    // let pa = await lc.partyA()
+    // let pi = await lc.partyI()
+    // let ba = await lc.balanceA()
+    // let bi = await lc.balanceI()
   })
 
   it("Hub signs initial lcS0 state", async () => {
@@ -100,7 +100,7 @@ contract('Test Cooperative Ether Payments', function(accounts) {
   })
 
   it("Ingrid joins ledger channel", async () => {
-    await lc.joinChannel(AI_lcS0_sigI, {from: partyI, value: web3.toWei(20, 'ether')})
+    await lc.joinChannel(1111, {from: partyI, value: web3.toWei(20, 'ether')})
   })
 
   // Bob creates ledger channel
@@ -124,13 +124,13 @@ contract('Test Cooperative Ether Payments', function(accounts) {
 
 
   it("Bob initiates ledger channel with lcS0", async () => {
-    lc2 = await Ledger.new(partyB, partyI, web3.toWei(10, 'ether'), web3.toWei(20, 'ether'), {from:partyB, value: web3.toWei(10, 'ether')})
-    let openTimeout = await lc.LCopenTimeout()
-    let stateHash = await lc.stateHash()
-    let pa = await lc.partyA()
-    let pi = await lc.partyI()
-    let ba = await lc.balanceA()
-    let bi = await lc.balanceI()
+    await lc.createChannel(2222, partyI, {from:partyB, value: web3.toWei(10, 'ether')})
+    // let openTimeout = await lc.LCopenTimeout()
+    // let stateHash = await lc.stateHash()
+    // let pa = await lc.partyA()
+    // let pi = await lc.partyI()
+    // let ba = await lc.balanceA()
+    // let bi = await lc.balanceI()
   })
 
   it("Hub signs initial lcS0 state", async () => {
@@ -138,7 +138,7 @@ contract('Test Cooperative Ether Payments', function(accounts) {
   })
 
   it("Ingrid joins ledger channel", async () => {
-    await lc2.joinChannel(BI_lcS0_sigI, {from: partyI, value: web3.toWei(20, 'ether')})
+    await lc.joinChannel(2222, {from: partyI, value: web3.toWei(20, 'ether')})
   })
 
 
@@ -301,7 +301,7 @@ contract('Test Cooperative Ether Payments', function(accounts) {
     var balB = await web3.fromWei(web3.eth.getBalance(partyI), 'ether')
     // console.log('Balance A before close: ' + balA)
     // console.log('Balance I before close: ' + balB)
-    await lc.consensusCloseChannel(1, 3, web3.toWei(8, 'ether'), web3.toWei(22, 'ether'), AI_lcS3_sigA, AI_lcS3_sigI)
+    await lc.consensusCloseChannel(1111, 3, web3.toWei(8, 'ether'), web3.toWei(22, 'ether'), AI_lcS3_sigA, AI_lcS3_sigI)
     balA = await web3.fromWei(web3.eth.getBalance(partyA), 'ether')
     balB = await web3.fromWei(web3.eth.getBalance(partyI), 'ether')
     // console.log('Balance A after close: ' + balA)

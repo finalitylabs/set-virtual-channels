@@ -86,7 +86,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
 
 
   it("Alice initiates ledger channel with lcS0", async () => {
-    await lc.createChannel(1111, partyI, {from:partyA, value: web3.toWei(10, 'ether')})
+    await lc.createChannel(web3.sha3('1111', {encoding: 'hex'}), partyI, {from:partyA, value: web3.toWei(10, 'ether')})
     // let openTimeout = await lc.LCopenTimeout()
     // let stateHash = await lc.stateHash()
     // let pa = await lc.partyA()
@@ -100,7 +100,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
   })
 
   it("Ingrid joins ledger channel", async () => {
-    await lc.joinChannel(1111, {from: partyI, value: web3.toWei(20, 'ether')})
+    await lc.joinChannel(web3.sha3('1111', {encoding: 'hex'}), {from: partyI, value: web3.toWei(20, 'ether')})
   })
 
   // Bob creates ledger channel
@@ -124,7 +124,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
 
 
   it("Bob initiates ledger channel with lcS0", async () => {
-    await lc.createChannel(2222, partyI, {from:partyB, value: web3.toWei(10, 'ether')})
+    await lc.createChannel(web3.sha3('2222', {encoding: 'hex'}), partyI, {from:partyB, value: web3.toWei(10, 'ether')})
     // let openTimeout = await lc.LCopenTimeout()
     // let stateHash = await lc.stateHash()
     // let pa = await lc.partyA()
@@ -138,7 +138,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
   })
 
   it("Ingrid joins ledger channel", async () => {
-    await lc.joinChannel(2222, {from: partyI, value: web3.toWei(20, 'ether')})
+    await lc.joinChannel(web3.sha3('2222', {encoding: 'hex'}), {from: partyI, value: web3.toWei(20, 'ether')})
   })
 
 
@@ -248,7 +248,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
   })
 
   it("Ingrid initiates settling on-chain with byzantine Bob", async () => {
-    await lc.updateLCstate(2222, 1, 1, web3.toWei(3, 'ether'), web3.toWei(15, 'ether'), vcRootHash, BI_lcS1_sigB, BI_lcS1_sigI)
+    await lc.updateLCstate(web3.sha3('2222', {encoding: 'hex'}), 1, 1, web3.toWei(3, 'ether'), web3.toWei(15, 'ether'), vcRootHash, BI_lcS1_sigB, BI_lcS1_sigI)
     // let seq = await lc2.sequence()
     // let numvc = await lc2.numOpenVC()
     // let ba = await lc2.balanceA()
@@ -264,12 +264,12 @@ contract('Test Disputed Ether Payments', function(accounts) {
     let proof = [vcRootHash]
     proof = Utils.marshallState(proof)
     // todo: generate vcID before vc creation and perhaps store in state
-    await lc.initVCstate(2222, 1337, proof, 0, partyA, partyB, web3.toWei(5, 'ether'), web3.toWei(7, 'ether'), AB_vcS0_sigA, AB_vcS0_sigB)
+    await lc.initVCstate(web3.sha3('2222', {encoding: 'hex'}), web3.sha3('1337', {encoding: 'hex'}), proof, 0, partyA, partyB, web3.toWei(5, 'ether'), web3.toWei(7, 'ether'), AB_vcS0_sigA, AB_vcS0_sigB)
 
   })
 
   it("Igrid or a watcher supply latest known vc state vcS1", async () => {
-    await lc.settleVC(2222, 1337, 1, partyA, partyB, web3.toWei(3, 'ether'), web3.toWei(9, 'ether'), AB_vcS1_sigA, AB_vcS1_sigB)
+    await lc.settleVC(web3.sha3('2222', {encoding: 'hex'}), web3.sha3('1337', {encoding: 'hex'}), 1, partyA, partyB, web3.toWei(3, 'ether'), web3.toWei(9, 'ether'), AB_vcS1_sigA, AB_vcS1_sigB)
   })
 
   it("Hub may now sign Alice's lcS2 state to consensus close VC", async () => {
@@ -277,7 +277,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
   })
 
   it("Anyone calls the wakeup function to settle vc state into lc state", async () => {
-    await lc.closeVirtualChannel(2222, 1337)
+    await lc.closeVirtualChannel(web3.sha3('2222', {encoding: 'hex'}), web3.sha3('1337', {encoding: 'hex'}))
   })
 
   it("Anyone calls close byzantine channel since all vc are closed", async () => {
@@ -285,7 +285,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
     var balB = await web3.fromWei(web3.eth.getBalance(partyI), 'ether')
     // console.log('Balance B before close: ' + balA)
     // console.log('Balance I before close: ' + balB)
-    await lc.byzantineCloseChannel(2222)
+    await lc.byzantineCloseChannel(web3.sha3('2222', {encoding: 'hex'}))
     balA = await web3.fromWei(web3.eth.getBalance(partyB), 'ether')
     balB = await web3.fromWei(web3.eth.getBalance(partyI), 'ether')
     // console.log('Balance B after close: ' + balA)

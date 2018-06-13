@@ -86,7 +86,7 @@ contract('Test Cooperative Ether Payments', function(accounts) {
 
 
   it("Alice initiates ledger channel with lcS0", async () => {
-    await lc.createChannel(1111, partyI, {from:partyA, value: web3.toWei(10, 'ether')})
+    await lc.createChannel(web3.sha3('1111', {encoding: 'hex'}), partyI, {from:partyA, value: web3.toWei(10, 'ether')})
     // let openTimeout = await lc.LCopenTimeout()
     // let stateHash = await lc.stateHash()
     // let pa = await lc.partyA()
@@ -100,7 +100,7 @@ contract('Test Cooperative Ether Payments', function(accounts) {
   })
 
   it("Ingrid joins ledger channel", async () => {
-    await lc.joinChannel(1111, {from: partyI, value: web3.toWei(20, 'ether')})
+    await lc.joinChannel(web3.sha3('1111', {encoding: 'hex'}), {from: partyI, value: web3.toWei(20, 'ether')})
   })
 
   // Bob creates ledger channel
@@ -124,7 +124,7 @@ contract('Test Cooperative Ether Payments', function(accounts) {
 
 
   it("Bob initiates ledger channel with lcS0", async () => {
-    await lc.createChannel(2222, partyI, {from:partyB, value: web3.toWei(10, 'ether')})
+    await lc.createChannel(web3.sha3('2222', {encoding: 'hex'}), partyI, {from:partyB, value: web3.toWei(10, 'ether')})
     // let openTimeout = await lc.LCopenTimeout()
     // let stateHash = await lc.stateHash()
     // let pa = await lc.partyA()
@@ -138,7 +138,7 @@ contract('Test Cooperative Ether Payments', function(accounts) {
   })
 
   it("Ingrid joins ledger channel", async () => {
-    await lc.joinChannel(2222, {from: partyI, value: web3.toWei(20, 'ether')})
+    await lc.joinChannel(web3.sha3('2222', {encoding: 'hex'}), {from: partyI, value: web3.toWei(20, 'ether')})
   })
 
 
@@ -301,7 +301,7 @@ contract('Test Cooperative Ether Payments', function(accounts) {
     var balB = await web3.fromWei(web3.eth.getBalance(partyI), 'ether')
     // console.log('Balance A before close: ' + balA)
     // console.log('Balance I before close: ' + balB)
-    await lc.consensusCloseChannel(1111, 3, web3.toWei(8, 'ether'), web3.toWei(22, 'ether'), AI_lcS3_sigA, AI_lcS3_sigI)
+    await lc.consensusCloseChannel(web3.sha3('1111', {encoding: 'hex'}), 3, web3.toWei(8, 'ether'), web3.toWei(22, 'ether'), AI_lcS3_sigA, AI_lcS3_sigI)
     balA = await web3.fromWei(web3.eth.getBalance(partyA), 'ether')
     balB = await web3.fromWei(web3.eth.getBalance(partyI), 'ether')
     // console.log('Balance A after close: ' + balA)

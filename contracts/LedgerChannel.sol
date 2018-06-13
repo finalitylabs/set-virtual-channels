@@ -47,11 +47,11 @@ contract LedgerChannel {
         //uint256 balanceI;
     }
 
-    mapping(uint => VirtualChannel) virtualChannels;
-    mapping(uint => Channel) Channels;
+    mapping(bytes32 => VirtualChannel) virtualChannels;
+    mapping(bytes32 => Channel) Channels;
 
-    function createChannel(uint _lcID, address _partyI) public payable {
-        require(_partyI != 0x0, 'No partyI address provided to LC constructor');
+    function createChannel(bytes32 _lcID, address _partyI) public payable {
+        require(_partyI != 0x0, 'No partyI address provided to LC creation');
         require(Channels[_lcID].isOpen == false, 'Channel already open');
         require(Channels[_lcID].sequence == 0, 'channel has already been used');
         // Set initial ledger channel state
@@ -67,7 +67,7 @@ contract LedgerChannel {
         Channels[_lcID].LCopenTimeout = now + confirmTime;
     }
 
-    function LCOpenTimeout(uint _lcID) public {
+    function LCOpenTimeout(bytes32 _lcID) public {
         require(msg.sender == Channels[_lcID].partyA && Channels[_lcID].isOpen == false);
         if (now > Channels[_lcID].LCopenTimeout) {
             Channels[_lcID].partyA.transfer(Channels[_lcID].balanceA);
@@ -76,7 +76,7 @@ contract LedgerChannel {
         }
     }
 
-    function joinChannel(uint _lcID) public payable {
+    function joinChannel(bytes32 _lcID) public payable {
         // require the channel is not open yet
         require(Channels[_lcID].isOpen == false);
         require(msg.sender == Channels[_lcID].partyI);
@@ -91,7 +91,7 @@ contract LedgerChannel {
 
 
     // additive updates of monetary state
-    function deposit(uint _lcID, address recipient) public payable {
+    function deposit(bytes32 _lcID, address recipient) public payable {
         require(Channels[_lcID].isOpen == true, 'Tried adding funds to a closed channel');
         require(recipient == Channels[_lcID].partyA || recipient == Channels[_lcID].partyI);
 
@@ -100,7 +100,7 @@ contract LedgerChannel {
     }
 
     // TODO: Check there are no open virtual channels, the client should have cought this before signing a close LC state update
-    function consensusCloseChannel(uint _lcID, uint256 _sequence, uint256 _balanceA, uint256 _balanceI, string _sigA, string _sigI) public {
+    function consensusCloseChannel(bytes32 _lcID, uint256 _sequence, uint256 _balanceA, uint256 _balanceI, string _sigA, string _sigI) public {
         // assume num open vc is 0 and root hash is 0x0
         bytes32 _state = keccak256(uint256(1), _sequence, uint256(0), bytes32(0x0), bytes32(Channels[_lcID].partyA), bytes32(Channels[_lcID].partyI), _balanceA, _balanceI);
 
@@ -116,7 +116,7 @@ contract LedgerChannel {
 
     // Byzantine functions
 
-    function updateLCstate(uint _lcID, uint256 _sequence, uint256 _numOpenVc, uint256 _balanceA, uint256 _balanceI, bytes32 _VCroot, string _sigA, string _sigI) public {
+    function updateLCstate(bytes32 _lcID, uint256 _sequence, uint256 _numOpenVc, uint256 _balanceA, uint256 _balanceI, bytes32 _VCroot, string _sigA, string _sigI) public {
         require(Channels[_lcID].sequence < _sequence); // do same as vc sequence check
 
         bytes32 _state = keccak256(uint256(0), _sequence, _numOpenVc, _VCroot, bytes32(Channels[_lcID].partyA), bytes32(Channels[_lcID].partyI), _balanceA, _balanceI);
@@ -137,7 +137,7 @@ contract LedgerChannel {
         // make settlement flag
     }
 
-    function initVCstate(uint _lcID, uint _vcID, bytes _proof, uint256 _sequence, address _partyA, address _partyB, uint256 _balanceA, uint256 _balanceB, string sigA, string sigB) public {
+    function initVCstate(bytes32 _lcID, bytes32 _vcID, bytes _proof, uint256 _sequence, address _partyA, address _partyB, uint256 _balanceA, uint256 _balanceB, string sigA, string sigB) public {
         // sub-channel must be open
         require(virtualChannels[_vcID].isClose == 0);
         require(virtualChannels[_vcID].sequence == 0);
@@ -161,7 +161,7 @@ contract LedgerChannel {
     }
 
     // Params: vc init state, vc final balance, vcID
-    function settleVC(uint _lcID, uint _vcID, uint256 updateSeq, address _partyA, address _partyB, uint256 updateBalA, uint256 updateBalB, string sigA, string sigB) public payable{
+    function settleVC(bytes32 _lcID, bytes32 _vcID, uint256 updateSeq, address _partyA, address _partyB, uint256 updateBalA, uint256 updateBalB, string sigA, string sigB) public payable{
         // sub-channel must be open
         require(virtualChannels[_vcID].isClose == 0);
         require(virtualChannels[_vcID].sequence < updateSeq);
@@ -188,7 +188,7 @@ contract LedgerChannel {
         virtualChannels[_vcID].isInSettlementState = 1;
     }
 
-    function closeVirtualChannel(uint _lcID, uint _vcID) public {
+    function closeVirtualChannel(bytes32 _lcID, bytes32 _vcID) public {
         // require(updateLCtimeout > now)
         require(virtualChannels[_vcID].isInSettlementState == 1);
         require(virtualChannels[_vcID].updateVCtimeout < now);
@@ -208,7 +208,7 @@ contract LedgerChannel {
     }
 
 
-    function byzantineCloseChannel(uint _lcID) public{
+    function byzantineCloseChannel(bytes32 _lcID) public{
         // check settlement flag
         require(Channels[_lcID].isUpdateLCSettling == true);
         require(Channels[_lcID].numOpenVC == 0);

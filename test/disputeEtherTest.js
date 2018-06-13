@@ -6,7 +6,6 @@ const Ledger = artifacts.require('./LedgerChannel.sol')
 const EC = artifacts.require('./ECTools.sol')
 
 let lc
-let lc2
 
 // state
 
@@ -64,6 +63,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
 
     let ec = await EC.new()
     Ledger.link('ECTools', ec.address)
+    lc = await Ledger.new()
   })
 
   it("Create initial ledger channel state lcS0 for AI channel", async () => {
@@ -86,13 +86,13 @@ contract('Test Disputed Ether Payments', function(accounts) {
 
 
   it("Alice initiates ledger channel with lcS0", async () => {
-    lc = await Ledger.new(partyA, partyI, web3.toWei(10, 'ether'), web3.toWei(20, 'ether'), {from:partyA, value: web3.toWei(10, 'ether')})
-    let openTimeout = await lc.LCopenTimeout()
-    let stateHash = await lc.stateHash()
-    let pa = await lc.partyA()
-    let pi = await lc.partyI()
-    let ba = await lc.balanceA()
-    let bi = await lc.balanceI()
+    await lc.createChannel(web3.sha3('1111', {encoding: 'hex'}), partyI, {from:partyA, value: web3.toWei(10, 'ether')})
+    // let openTimeout = await lc.LCopenTimeout()
+    // let stateHash = await lc.stateHash()
+    // let pa = await lc.partyA()
+    // let pi = await lc.partyI()
+    // let ba = await lc.balanceA()
+    // let bi = await lc.balanceI()
   })
 
   it("Hub signs initial lcS0 state", async () => {
@@ -100,7 +100,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
   })
 
   it("Ingrid joins ledger channel", async () => {
-    await lc.joinChannel(AI_lcS0_sigI, {from: partyI, value: web3.toWei(20, 'ether')})
+    await lc.joinChannel(web3.sha3('1111', {encoding: 'hex'}), {from: partyI, value: web3.toWei(20, 'ether')})
   })
 
   // Bob creates ledger channel
@@ -124,13 +124,13 @@ contract('Test Disputed Ether Payments', function(accounts) {
 
 
   it("Bob initiates ledger channel with lcS0", async () => {
-    lc2 = await Ledger.new(partyB, partyI, web3.toWei(10, 'ether'), web3.toWei(20, 'ether'), {from:partyB, value: web3.toWei(10, 'ether')})
-    let openTimeout = await lc.LCopenTimeout()
-    let stateHash = await lc.stateHash()
-    let pa = await lc.partyA()
-    let pi = await lc.partyI()
-    let ba = await lc.balanceA()
-    let bi = await lc.balanceI()
+    await lc.createChannel(web3.sha3('2222', {encoding: 'hex'}), partyI, {from:partyB, value: web3.toWei(10, 'ether')})
+    // let openTimeout = await lc.LCopenTimeout()
+    // let stateHash = await lc.stateHash()
+    // let pa = await lc.partyA()
+    // let pi = await lc.partyI()
+    // let ba = await lc.balanceA()
+    // let bi = await lc.balanceI()
   })
 
   it("Hub signs initial lcS0 state", async () => {
@@ -138,7 +138,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
   })
 
   it("Ingrid joins ledger channel", async () => {
-    await lc2.joinChannel(BI_lcS0_sigI, {from: partyI, value: web3.toWei(20, 'ether')})
+    await lc.joinChannel(web3.sha3('2222', {encoding: 'hex'}), {from: partyI, value: web3.toWei(20, 'ether')})
   })
 
 
@@ -248,15 +248,15 @@ contract('Test Disputed Ether Payments', function(accounts) {
   })
 
   it("Ingrid initiates settling on-chain with byzantine Bob", async () => {
-    await lc2.updateLCstate(0, 1, 1, web3.toWei(3, 'ether'), web3.toWei(15, 'ether'), vcRootHash, BI_lcS1_sigB, BI_lcS1_sigI)
-    let seq = await lc2.sequence()
-    let numvc = await lc2.numOpenVC()
-    let ba = await lc2.balanceA()
-    let bi = await lc2.balanceI()
-    let root = await lc2.VCrootHash()
+    await lc.updateLCstate(web3.sha3('2222', {encoding: 'hex'}), 1, 1, web3.toWei(3, 'ether'), web3.toWei(15, 'ether'), vcRootHash, BI_lcS1_sigB, BI_lcS1_sigI)
+    // let seq = await lc2.sequence()
+    // let numvc = await lc2.numOpenVC()
+    // let ba = await lc2.balanceA()
+    // let bi = await lc2.balanceI()
+    // let root = await lc2.VCrootHash()
 
-    let isSettle = await lc2.isUpdateLCSettling()
-    let timeout = await lc2.updateLCtimeout()
+    // let isSettle = await lc2.isUpdateLCSettling()
+    // let timeout = await lc2.updateLCtimeout()
   })
 
   it("Ingrid initiates settling vc with initial state", async () => {
@@ -264,12 +264,12 @@ contract('Test Disputed Ether Payments', function(accounts) {
     let proof = [vcRootHash]
     proof = Utils.marshallState(proof)
     // todo: generate vcID before vc creation and perhaps store in state
-    await lc2.initVCstate(1337, proof, 0, partyA, partyB, web3.toWei(5, 'ether'), web3.toWei(7, 'ether'), AB_vcS0_sigA, AB_vcS0_sigB)
+    await lc.initVCstate(web3.sha3('2222', {encoding: 'hex'}), web3.sha3('1337', {encoding: 'hex'}), proof, 0, partyA, partyB, web3.toWei(5, 'ether'), web3.toWei(7, 'ether'), AB_vcS0_sigA, AB_vcS0_sigB)
 
   })
 
   it("Igrid or a watcher supply latest known vc state vcS1", async () => {
-    await lc2.settleVC(1337, 1, partyA, partyB, web3.toWei(3, 'ether'), web3.toWei(9, 'ether'), AB_vcS1_sigA, AB_vcS1_sigB)
+    await lc.settleVC(web3.sha3('2222', {encoding: 'hex'}), web3.sha3('1337', {encoding: 'hex'}), 1, partyA, partyB, web3.toWei(3, 'ether'), web3.toWei(9, 'ether'), AB_vcS1_sigA, AB_vcS1_sigB)
   })
 
   it("Hub may now sign Alice's lcS2 state to consensus close VC", async () => {
@@ -277,7 +277,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
   })
 
   it("Anyone calls the wakeup function to settle vc state into lc state", async () => {
-    await lc2.closeVirtualChannel(1337)
+    await lc.closeVirtualChannel(web3.sha3('2222', {encoding: 'hex'}), web3.sha3('1337', {encoding: 'hex'}))
   })
 
   it("Anyone calls close byzantine channel since all vc are closed", async () => {
@@ -285,7 +285,7 @@ contract('Test Disputed Ether Payments', function(accounts) {
     var balB = await web3.fromWei(web3.eth.getBalance(partyI), 'ether')
     // console.log('Balance B before close: ' + balA)
     // console.log('Balance I before close: ' + balB)
-    await lc2.byzantineCloseChannel()
+    await lc.byzantineCloseChannel(web3.sha3('2222', {encoding: 'hex'}))
     balA = await web3.fromWei(web3.eth.getBalance(partyB), 'ether')
     balB = await web3.fromWei(web3.eth.getBalance(partyI), 'ether')
     // console.log('Balance B after close: ' + balA)

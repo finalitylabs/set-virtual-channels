@@ -13,7 +13,7 @@ contract LedgerChannel {
     // timeout storage
     uint256 public confirmTime = 0 minutes;
 
-    address public closingParty = address(0x0);
+    uint256 public numChannels = 0;
 
     struct Channel {
         address partyA;
@@ -28,6 +28,7 @@ contract LedgerChannel {
         bool isOpen; // true when both parties have joined
         bool isUpdateLCSettling;
         uint256 numOpenVC;
+        //address closingParty;
     }
 
     // virtual-channel state
@@ -85,6 +86,7 @@ contract LedgerChannel {
 
         // no longer allow joining functions to be called
         Channels[_lcID].isOpen = true;
+        numChannels++;
     }
 
 
@@ -109,6 +111,7 @@ contract LedgerChannel {
         Channels[_lcID].partyI.transfer(_balanceI);
 
         Channels[_lcID].isOpen = false;
+        numChannels--;
     }
 
     // Byzantine functions
@@ -213,6 +216,7 @@ contract LedgerChannel {
         Channels[_lcID].partyA.transfer(Channels[_lcID].balanceA);
         Channels[_lcID].partyI.transfer(Channels[_lcID].balanceI);
         Channels[_lcID].isOpen = false;
+        numChannels--;
     }
 
     function _isContained(bytes32 _hash, bytes _proof, bytes32 _root) internal pure returns (bool) {

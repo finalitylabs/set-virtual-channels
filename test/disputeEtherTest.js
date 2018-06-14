@@ -144,10 +144,10 @@ contract('Test Disputed Ether Payments', function(accounts) {
 
   it("Alice creates vc state vcSO with Bob", async () => {
     AB_vcS0 = []
+    AB_vcS0.push(web3.sha3('1337', {encoding: 'hex'}))
     AB_vcS0.push(0)
     AB_vcS0.push(partyA)
     AB_vcS0.push(partyB)
-    AB_vcS0.push(partyI)
     AB_vcS0.push(web3.toWei(5, 'ether'))
     AB_vcS0.push(web3.toWei(7, 'ether'))
 
@@ -218,10 +218,10 @@ contract('Test Disputed Ether Payments', function(accounts) {
 
   it("Alice generates virtual channel payment with Bob", async () => {
     AB_vcS1 = []
+    AB_vcS1.push(web3.sha3('1337', {encoding: 'hex'}))
     AB_vcS1.push(1)
     AB_vcS1.push(partyA)
     AB_vcS1.push(partyB)
-    AB_vcS1.push(partyI)
     AB_vcS1.push(web3.toWei(3, 'ether'))
     AB_vcS1.push(web3.toWei(9, 'ether'))
 

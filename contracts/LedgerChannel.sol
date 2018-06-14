@@ -102,6 +102,7 @@ contract LedgerChannel {
     // TODO: Check there are no open virtual channels, the client should have cought this before signing a close LC state update
     function consensusCloseChannel(bytes32 _lcID, uint256 _sequence, uint256 _balanceA, uint256 _balanceI, string _sigA, string _sigI) public {
         // assume num open vc is 0 and root hash is 0x0
+        require(Channels[_lcID].sequence < _sequence);
         bytes32 _state = keccak256(uint256(1), _sequence, uint256(0), bytes32(0x0), bytes32(Channels[_lcID].partyA), bytes32(Channels[_lcID].partyI), _balanceA, _balanceI);
 
         require(Channels[_lcID].partyA == ECTools.recoverSigner(_state, _sigA));
@@ -144,7 +145,7 @@ contract LedgerChannel {
         // Check time has passed on updateLCtimeout and has not passed the time to store a vc state
         require(Channels[_lcID].updateLCtimeout < now);
         // partyB is now Ingrid
-        bytes32 _initState = keccak256(_sequence, bytes32(_partyA), bytes32(_partyB), bytes32(Channels[_lcID].partyI), _balanceA, _balanceB);
+        bytes32 _initState = keccak256(_vcID, _sequence, bytes32(_partyA), bytes32(_partyB), _balanceA, _balanceB);
 
         // Make sure Alice and Bob have signed initial vc state (A/B in oldState)
         require(_partyA == ECTools.recoverSigner(_initState, sigA));
@@ -155,7 +156,6 @@ contract LedgerChannel {
 
         virtualChannels[_vcID].partyA = _partyA; // VC participant A
         virtualChannels[_vcID].partyB = _partyB; // VC participant B
-        virtualChannels[_vcID].partyI = Channels[_lcID].partyI; // LC hub
         virtualChannels[_vcID].sequence = _sequence;
         virtualChannels[_vcID].updateVCtimeout = now + confirmTime;
     }
@@ -169,7 +169,7 @@ contract LedgerChannel {
         //require(Channels[_lcID].updateLCtimeout < now && now < virtualChannels[_vcID].updateVCtimeout);
         require(Channels[_lcID].updateLCtimeout < now); // for testing!
 
-        bytes32 _upateState = keccak256(updateSeq, bytes32(_partyA), bytes32(_partyB), bytes32(Channels[_lcID].partyI), updateBalA, updateBalB);
+        bytes32 _upateState = keccak256(_vcID, updateSeq, bytes32(_partyA), bytes32(_partyB), updateBalA, updateBalB);
 
         // Make sure Alice and Bob have signed a higher sequence new state
         require(virtualChannels[_vcID].partyA == ECTools.recoverSigner(_upateState, sigA));

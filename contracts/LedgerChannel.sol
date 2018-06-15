@@ -161,7 +161,7 @@ contract LedgerChannel {
     }
 
     // Params: vc init state, vc final balance, vcID
-    function settleVC(bytes32 _lcID, bytes32 _vcID, uint256 updateSeq, address _partyA, address _partyB, uint256 updateBalA, uint256 updateBalB, string sigA, string sigB) public payable{
+    function settleVC(bytes32 _lcID, bytes32 _vcID, uint256 updateSeq, address _partyA, address _partyB, uint256 updateBalA, uint256 updateBalB, string sigA, string sigB) public {
         // sub-channel must be open
         require(virtualChannels[_vcID].isClose == 0);
         require(virtualChannels[_vcID].sequence < updateSeq);

@@ -1,2 +1,2 @@
 # virtual-channels
-Ethereum contracts for simple Perun style virtual channels specific to unidirectional payment hubs
+Ethereum contracts for simple Set style virtual channels specific to bidirectional payment hubs

@@ -78,6 +78,7 @@ export default class MerkleTree {
 
   proof(element) {
     let index = this.elements.findIndex(e => e.equals(element))
+
     if (index === -1) {
       throw new Error('element not found in merkle tree')
     }

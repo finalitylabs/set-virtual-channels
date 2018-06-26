@@ -33,6 +33,9 @@ let BI_lcS2
 let AB_vcS0
 let AB_vcS1
 
+let AB_vc2_S0
+let AB_vc2_S1
+
 // signature storage
 let AI_lcS0_sigA
 let AI_lcS1_sigA
@@ -71,18 +74,6 @@ contract('Test Cooperative Ether Payments', function(accounts) {
   })
 
   it("Create initial ledger channel state lcS0 for AI channel", async () => {
-    // AI_lcS0 = []
-    // AI_lcS0.push(0)
-    // AI_lcS0.push(0)
-    // AI_lcS0.push(0)
-    // AI_lcS0.push('0x0')
-    // AI_lcS0.push(partyA)
-    // AI_lcS0.push(partyI)
-    // AI_lcS0.push(web3.toWei(10, 'ether'))
-    // AI_lcS0.push(web3.toWei(20, 'ether'))
-
-    // AI_lcS0 = Utils.marshallState(AI_lcS0)
-
     AI_lcS0 = web3latest.utils.soliditySha3(
       { type: 'bool', value: false }, // isclose
       //{ type: 'bytes32', value: web3.sha3('lc2', {encoding: 'hex'}) }, // lcid
@@ -121,18 +112,6 @@ contract('Test Cooperative Ether Payments', function(accounts) {
 
   // Bob creates ledger channel
   it("Create Bob's ledger channel state lcS0 for BI channel", async () => {
-    // BI_lcS0 = []
-    // BI_lcS0.push(0)
-    // BI_lcS0.push(0)
-    // BI_lcS0.push(0)
-    // BI_lcS0.push('0x0')
-    // BI_lcS0.push(partyB)
-    // BI_lcS0.push(partyI)
-    // BI_lcS0.push(web3.toWei(10, 'ether'))
-    // BI_lcS0.push(web3.toWei(20, 'ether'))
-
-    // BI_lcS0 = Utils.marshallState(BI_lcS0)
-
     BI_lcS0 = web3latest.utils.soliditySha3(
       { type: 'bool', value: false }, // isclose
       //{ type: 'bytes32', value: web3.sha3('lc4', {encoding: 'hex'}) }, // lcid
@@ -171,21 +150,12 @@ contract('Test Cooperative Ether Payments', function(accounts) {
 
 
   it("Alice creates vc state vcSO with Bob", async () => {
-    // AB_vcS0 = []
-    // AB_vcS0.push(web3.sha3('1337', {encoding: 'hex'}))
-    // AB_vcS0.push(0)
-    // AB_vcS0.push(partyA)
-    // AB_vcS0.push(partyB)
-    // AB_vcS0.push(web3.toWei(5, 'ether'))
-    // AB_vcS0.push(web3.toWei(7, 'ether'))
-
-    // AB_vcS0 = Utils.marshallState(AB_vcS0)
-
     AB_vcS0 = web3latest.utils.soliditySha3(
       { type: 'bytes32', value: web3latest.utils.sha3('1337', {encoding: 'hex'}) }, // vc id
       { type: 'uint256', value: 0 }, // sequence
       { type: 'address', value: partyB }, // partyA
-      { type: 'address', value: partyB }, // hub
+      { type: 'address', value: partyB }, // hub,
+      { type: 'uint256', value: web3latest.utils.toWei('12') }, // hub bond
       { type: 'uint256', value: web3latest.utils.toWei('5') },
       { type: 'uint256', value: web3latest.utils.toWei('7') }
     )
@@ -202,21 +172,11 @@ contract('Test Cooperative Ether Payments', function(accounts) {
     var buf = Utils.hexToBuffer(hash)
     var elems = []
     elems.push(buf)
+    elems.push(Utils.hexToBuffer('0x0000000000000000000000000000000000000000000000000000000000000000'))
     var merkle = new MerkleTree(elems)
 
     vcRootHash = Utils.bufferToHex(merkle.getRoot())
 
-    // AI_lcS1 = []
-    // AI_lcS1.push(0)
-    // AI_lcS1.push(1)
-    // AI_lcS1.push(1)
-    // AI_lcS1.push(vcRootHash)
-    // AI_lcS1.push(partyA)
-    // AI_lcS1.push(partyI)
-    // AI_lcS1.push(web3.toWei(5, 'ether'))
-    // AI_lcS1.push(web3.toWei(13, 'ether'))
-
-    // AI_lcS1 = Utils.marshallState(AI_lcS1)
     AI_lcS1 = web3latest.utils.soliditySha3(
       { type: 'bool', value: false }, // isclose
       //{ type: 'bytes32', value: web3.sha3('lc2', {encoding: 'hex'}) }, // lcid
@@ -239,21 +199,10 @@ contract('Test Cooperative Ether Payments', function(accounts) {
     var buf = Utils.hexToBuffer(hash)
     var elems = []
     elems.push(buf)
+    elems.push(Utils.hexToBuffer('0x0000000000000000000000000000000000000000000000000000000000000000'))
     var merkle = new MerkleTree(elems)
 
     vcRootHash = Utils.bufferToHex(merkle.getRoot())
-
-    // BI_lcS1 = []
-    // BI_lcS1.push(0)
-    // BI_lcS1.push(1)
-    // BI_lcS1.push(1)
-    // BI_lcS1.push(vcRootHash)
-    // BI_lcS1.push(partyB)
-    // BI_lcS1.push(partyI)
-    // BI_lcS1.push(web3.toWei(3, 'ether'))
-    // BI_lcS1.push(web3.toWei(15, 'ether'))
-
-    // BI_lcS1 = Utils.marshallState(BI_lcS1)
 
     BI_lcS1 = web3latest.utils.soliditySha3(
       { type: 'bool', value: false }, // isclose
@@ -278,21 +227,12 @@ contract('Test Cooperative Ether Payments', function(accounts) {
   })
 
   it("Alice generates virtual channel payment with Bob", async () => {
-    // AB_vcS1 = []
-    // AB_vcS1.push(web3.sha3('1337', {encoding: 'hex'}))
-    // AB_vcS1.push(1)
-    // AB_vcS1.push(partyA)
-    // AB_vcS1.push(partyB)
-    // AB_vcS1.push(web3.toWei(3, 'ether'))
-    // AB_vcS1.push(web3.toWei(9, 'ether'))
-
-    // AB_vcS1 = Utils.marshallState(AB_vcS1)    
-
     AB_vcS1 = web3latest.utils.soliditySha3(
       { type: 'bytes32', value: web3latest.utils.sha3('1337', {encoding: 'hex'}) }, // vc id
       { type: 'uint256', value: 0 }, // sequence
       { type: 'address', value: partyB }, // partyA
       { type: 'address', value: partyB }, // hub
+      { type: 'uint256', value: web3latest.utils.toWei('12') }, // hub bond
       { type: 'uint256', value: web3latest.utils.toWei('5') },
       { type: 'uint256', value: web3latest.utils.toWei('7') }
     )
@@ -305,18 +245,6 @@ contract('Test Cooperative Ether Payments', function(accounts) {
   })
 
   it("Alice generates lc state to close vc", async () => {
-    // AI_lcS2 = []
-    // AI_lcS2.push(0)
-    // AI_lcS2.push(2)
-    // AI_lcS2.push(0)
-    // AI_lcS2.push('0x0')
-    // AI_lcS2.push(partyA)
-    // AI_lcS2.push(partyI)
-    // AI_lcS2.push(web3.toWei(8, 'ether'))
-    // AI_lcS2.push(web3.toWei(22, 'ether'))
-
-    // AI_lcS2 = Utils.marshallState(AI_lcS2)    
-
     AI_lcS2 = web3latest.utils.soliditySha3(
       { type: 'bool', value: false }, // isclose
       //{ type: 'bytes32', value: web3.sha3('lc2', {encoding: 'hex'}) }, // lcid
@@ -332,18 +260,6 @@ contract('Test Cooperative Ether Payments', function(accounts) {
   })
 
   it("Bob generates lc state to close vc", async () => {
-    // BI_lcS2 = []
-    // BI_lcS2.push(0)
-    // BI_lcS2.push(2)
-    // BI_lcS2.push(0)
-    // BI_lcS2.push('0x0')
-    // BI_lcS2.push(partyB)
-    // BI_lcS2.push(partyI)
-    // BI_lcS2.push(web3.toWei(12, 'ether'))
-    // BI_lcS2.push(web3.toWei(18, 'ether'))
-
-    // BI_lcS2 = Utils.marshallState(BI_lcS2)  
-
     BI_lcS2 = web3latest.utils.soliditySha3(
       { type: 'bool', value: false }, // isclose
       //{ type: 'bytes32', value: web3.sha3('lc4', {encoding: 'hex'}) }, // lcid
@@ -371,18 +287,6 @@ contract('Test Cooperative Ether Payments', function(accounts) {
   })
 
   it("Alice creates lc update to close lc", async () => {
-    // AI_lcS3 = []
-    // AI_lcS3.push(1)
-    // AI_lcS3.push(3)
-    // AI_lcS3.push(0)
-    // AI_lcS3.push('0x0')
-    // AI_lcS3.push(partyA)
-    // AI_lcS3.push(partyI)
-    // AI_lcS3.push(web3.toWei(8, 'ether'))
-    // AI_lcS3.push(web3.toWei(22, 'ether'))
-
-    // AI_lcS3 = Utils.marshallState(AI_lcS3) 
-
     AI_lcS3 = web3latest.utils.soliditySha3(
       { type: 'bool', value: true }, // isclose
       //{ type: 'bytes32', value: web3.sha3('lc2', {encoding: 'hex'}) }, // lcid

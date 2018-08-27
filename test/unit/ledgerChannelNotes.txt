@@ -1,0 +1,148 @@
+dispute scenarios:
+
+- Someone takes a different nonce to chain (for either type of channel)
+  - should fail if nonce is lower than what is on-chain
+- Someone takes the correct nonce to chain
+  - should allow time for response if nonce is higher than anything already onchain
+- For all dispute cases, it resets the challenge time
+- Same thing as above, but for the ledger channels
+- Error cases:
+    - hub didn't countersign, should trigger the dispute case for clients A_I/B_I lc
+    - tipper (alice) does not sign A_I lc rebalance with hub
+    - performer (bob) does not sign B_I lc rebalance with hub
+- Any random person calls updateLC
+- Any random person calls startSettleVC during byzantine case
+- Any random person calls settleVC during byzantine case
+
+
+unit should fail:
+
+- createChannel
+  - call on already open lc
+  - call with incorrect formatted parameters (id, hub address, confirmtime)
+
+- lcOpenTimeout
+  - call after timeout time
+  - call not as initiator of channel
+  - call after channel is open
+
+- joinChannel
+  - call after channel is open
+  - call not as partyI from createChannel()
+  - call with incorrect balance (partyA will have to byzantine settle the lc and not sign any lc state updates)
+
+- depositState
+  - call as either not party A or hub
+  - call with zero funds
+
+- consensusCloseChannel
+  - call with no signed isClose flag
+  - call on closed channel
+  - look for re-entry
+
+- updateLCstate
+  - call on closed channel
+  - call with lower or equal sequence as stored onchain
+  - call after the timeout time
+  - call with bad state not signed by lc parties
+
+- initVCstate
+  - call before updateLCstate timeout ends
+  - call afer more than once for any vc id
+  - call on wrong ledger channel 
+  - call with non-initial state
+  - call on closed vc
+  - call on wrong vc
+
+- settleVC
+  - call before initVC
+  - call before LC settled
+  - call on wrong lc/vc
+  - call on closed vc/lc
+  - call with lower or equal sequence as stored onchain
+  - call with incorrect balances given bond
+  - call with balance decreasing for performer (should only increase)
+  - call with incorrect sigs for given vc
+
+- closeVirtualChannel
+  - call before vc-settle timeout
+  - call on non-open vc
+  - call on already closed vc
+  - call on closed lc
+  - call on non-settled vc
+  - call with wonky balances stored in vc (should have been caught already but look for over/underflows)
+  - look for rentrance
+
+- byzantineCloseChannel
+  - call on non-settling lc
+  - call on previously settled lc
+  - call on lc with vc open
+
+layne 
+
+- Registering with the hub
+    - call register
+        - assertion: does the ledger channel exist on the hub and the connext client?
+        - assertion: the ingrid balance is zero
+    - ask hub to deposit
+        - assertion: is the ingrid balance in the channel equal to the userA balance
+    - Error cases
+        - hub doesn't have sufficient balance to make the deposit
+        - registration fails due to no gas or something
+        - registration should fail if you have an open and active ledger channel already
+
+- Post-registration
+    - open a virtual channel with party B (call openChannel)
+        - assertion: hub has record of VC
+        - assertion: the entire balance of the LC is inside of the VC if no deposit provided
+        - assertion: the deposit balance is inside of the VC if a deposit is provided and LCbal - VCbal = new LC balance
+        - assertion: ingrid countersigns the LC update
+        - assertion: ingrid creates a LC update for party B
+        - error cases
+            - if Ingrid doesn't have enough balance
+            - if you don't have enough balance to cover your deposit
+            - if the deposits are invalid (0, negative)
+            - if you're not sending to a valid address
+            - if you have an active or opening channel with that person
+    - call updateBalance
+        - assertion: balance of VC is updated given the updateBalance parameters
+        - assertion: a properly signs the balance update
+        - assertion: getting the balance from the hub reflects the updated balances
+        - assertion: calling multiples times in a row with updates nonces will update the balance
+        - error cases
+            - if balances are negative or zero
+            - if balanceB is not increased explicitly
+            - if you try to take funds from the other party
+            - if the channel is settled or closed
+            - if you don't have enough balance to make the update
+            - if you don't have a valid VC
+            - if the nonce isn't incremented
+
+- Channel closure
+    - close virtual channel
+        - assertion: the virtual channel's state on the hub is VCS_SETTLED
+        - assertion: the LC balanceA has the remainder of the virtual channel balanceA
+        - assertion: the balanceB belonging to the receiving non-hub counterparty has the balanceb of the virtual channel
+        - assertion: can be called by either partyA or partyB
+        - assertion: can be called by partyB even if partyB has never joined the channel
+        - assertion: should go to dispute case if the hub doesn't countersign the final closing LC update
+        - error cases:
+            - if virtual channel doesn't exist
+            - if virtual channel doesn't belong to me
+            - if virtual channel isn't open
+    - close ledger channel
+        - assertion: the balance of the ledger channel goes to partyA and ingrid's hot wallet
+        - assertion: can only close if there are no open virtual channels
+        - assertion: can only close if the root hash is empty
+        - error cases:
+            - if ledger channel doesn't exist
+            - if ledger channel doesn't belong to me
+            - if ledger channel isn't open
+
+Test case infrastructure:
+
+- local hub talking to testrpc
+- local web3 instance talking to testrpc
+- local database
+- assertions will be made using connext-client methods
+- when test cases complete, shut down all infra

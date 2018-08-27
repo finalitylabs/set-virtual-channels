@@ -1,5 +1,6 @@
 require("babel-register");
 require("babel-polyfill");
+const HDWalletProvider = require("truffle-hdwallet-provider-privkey");
 
 var test = false;
 var rinkeby = false;
@@ -22,9 +23,12 @@ module.exports = {
       gasPrice: 0x01 // <-- Use this low gas price
     },
     rinkeby: {
-      host: "localhost", // Connect to geth on the specified
-      port: 8545,
-      from: account, // default address to use for any transaction Truffle makes during migrations
+      provider: () => {
+        return new HDWalletProvider(
+          "2940e1526f1b5ae5b5335758b82d4f2627bd522d4d186ec6ce7fe5d12b58074f",
+          "https://rinkeby.infura.io/nsUEX1RYRhRDJoN89CrK"
+        );
+      },
       network_id: 4,
       gas: 4612388 // Gas limit used for deploys
     },
@@ -43,7 +47,7 @@ module.exports = {
     },
     ganache: {
       host: "127.0.0.1",
-      port: 8545,
+      port: 7545,
       network_id: "4447",
       gas: 4700000
     },
@@ -52,6 +56,11 @@ module.exports = {
       port: 9545,
       network_id: "4447",
       gas: 4700000
+    },
+    development: {
+      host: "localhost",
+      port: 8545,
+      network_id: "*"
     }
   },
   solc: {
